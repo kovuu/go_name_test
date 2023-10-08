@@ -7,6 +7,6 @@
         age        int,
         gender varchar(10),
         nationality varchar(100),
-        PRIMARY KEY (id, name, surname, age, gender, nationality)
+        PRIMARY KEY (name, surname, age, gender, nationality)
     )
 
