@@ -1,4 +1,4 @@
-package types
+package interfaces
 
 type Person struct {
 	Name       string `json:"name" binding:"required"`
