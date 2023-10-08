@@ -27,5 +27,5 @@ type FioFailedProducerInterface interface {
 }
 
 type DataBaseInterface interface {
-	SavePerson(person Person, app *Application)
+	SavePerson(person Person, app *Application) (int64, error)
 }

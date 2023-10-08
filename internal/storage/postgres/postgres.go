@@ -57,19 +57,20 @@ func migrateSQL(conn *sql.DB, cfg *config.Config) error {
 	return nil
 }
 
-func (storage *Storage) SavePerson(person interfaces.Person, app *interfaces.Application) {
+func (storage *Storage) SavePerson(person interfaces.Person, app *interfaces.Application) (int64, error) {
 	app.Logger.Info("Data saved", person)
 
-	//const op = "storage.postgres.SavePerson"
-	//query := fmt.Sprintf("INSERT INTO person(url, alias) VALUES ('%v', '%v') RETURNING id", urlToSave, alias)
-	//fmt.Println("query", query)
-	//var id int64
-	//err := s.db.QueryRow(query).Scan(&id)
-	//if err != nil {
-	//	return 0, fmt.Errorf("%s %w", op, err)
-	//}
-	//
-	//return id, nil
+	const op = "storage.postgres.SavePerson"
+	query := fmt.Sprintf("INSERT INTO person(name, surname, patronymic, age, gender, nationality) VALUES ('%v', '%v', '%v', '%v', '%v', '%v') RETURNING id",
+		person.Name, person.Surname, person.Patronymic, person.Age, person.Gender, person.Nationality)
+	fmt.Println("query", query)
+	var id int64
+	err := storage.db.QueryRow(query).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("%s %w", op, err)
+	}
+
+	return id, nil
 }
 
 //func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
