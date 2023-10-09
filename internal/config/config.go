@@ -4,23 +4,20 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/joho/godotenv"
 	"log"
-	"time"
 )
 
 type Config struct {
 	Env string `env:"ENV"`
-	//StoragePath string `yaml:"storage_path" env-required:"true"`
-	HTTPServer
 	ConfigDatabase
 	MigrationsConfig
 	KafkaConfig
 }
 
-type HTTPServer struct {
-	Address     string        `yaml:"address" env:"HTTP_ADDRESS" env-default:"localhost:8080"`
-	Timeout     time.Duration `yaml:"timeout" env:"TIMEOUT" env-default:"4s"`
-	IdleTimeout time.Duration `yaml:"idle_timeout" env:"IDLE_TIMEOUT" env-default:"60s"`
-}
+//type HTTPServer struct {
+//	Address     string        `yaml:"address" env:"HTTP_ADDRESS" env-default:"localhost:8080"`
+//	Timeout     time.Duration `yaml:"timeout" env:"TIMEOUT" env-default:"4s"`
+//	IdleTimeout time.Duration `yaml:"idle_timeout" env:"IDLE_TIMEOUT" env-default:"60s"`
+//}
 
 type KafkaConfig struct {
 	KafkaUrl            string `env:"KAFKA_URL"`
@@ -45,7 +42,7 @@ type MigrationsConfig struct {
 func MustLoad() *Config {
 	var cfg Config
 
-	err := godotenv.Load("./.env")
+	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("error loading .env file")
 	}

@@ -18,8 +18,7 @@ const (
 )
 
 func main() {
-
-	app := &interfaces.Application{}
+	app := &interfaces.PersonProcessingApp{}
 	app.Cfg = config.MustLoad()
 
 	app.Logger = setupLogger(app.Cfg.Env)
@@ -38,32 +37,6 @@ func main() {
 	if err != nil {
 		app.Logger.Error("kafka consumer error", err)
 	}
-
-	//storage, err := postgres.New(app.Cfg)
-	//if err != nil {
-	//	app.Logger.Error("failed to init storage", sl.Err(err))
-	//	os.Exit(1)
-	//}
-	//
-	//app.DB = storage
-
-	//incomeMessages := make(chan string)
-	//go fio_consumer.ConsumeMessages(incomeMessages)
-	//
-	//func() {
-	//	for {
-	//		message := <-incomeMessages
-	//		person, err := utils2.UnmarshallWrapper([]byte(message))
-	//		if err != nil {
-	//			log.Printf("Cannot parse a person %s", person)
-	//			personFailedJSON := utils2.CreatePersonErrorJSON(person)
-	//			kafka_fio_errors_producer.ProduceFIOError(personFailedJSON)
-	//		} else {
-	//			fmt.Println(person)
-	//			//db.SavePersonToDB(person)
-	//		}
-	//	}
-	//}()
 }
 
 func setupLogger(env string) *slog.Logger {

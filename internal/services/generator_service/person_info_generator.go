@@ -16,10 +16,10 @@ const (
 )
 
 type PersonInfoGenerator struct {
-	App *interfaces.Application
+	App *interfaces.PersonProcessingApp
 }
 
-func New(app *interfaces.Application) *PersonInfoGenerator {
+func New(app *interfaces.PersonProcessingApp) *PersonInfoGenerator {
 	return &PersonInfoGenerator{App: app}
 }
 

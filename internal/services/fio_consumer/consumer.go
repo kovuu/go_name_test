@@ -25,7 +25,7 @@ func New(cfg *config.Config) *FioConsumer {
 	return &FioConsumer{Reader: reader}
 }
 
-func (consumer *FioConsumer) Process(app *interfaces.Application) error {
+func (consumer *FioConsumer) Process(app *interfaces.PersonProcessingApp) error {
 	for {
 		m, err := consumer.Reader.ReadMessage(context.Background())
 		if err != nil {

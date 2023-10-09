@@ -21,7 +21,7 @@ func New(cfg *config.Config) *FioFailedProducer {
 	return &FioFailedProducer{Conn: conn}
 }
 
-func (producer *FioFailedProducer) Process(personFailedJSON []byte, app *interfaces.Application) {
+func (producer *FioFailedProducer) Process(personFailedJSON []byte, app *interfaces.PersonProcessingApp) {
 	err := producer.writeMessage(personFailedJSON)
 
 	if err != nil {

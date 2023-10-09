@@ -57,7 +57,7 @@ func migrateSQL(conn *sql.DB, cfg *config.Config) error {
 	return nil
 }
 
-func (storage *Storage) SavePerson(person interfaces.Person, app *interfaces.Application) (int64, error) {
+func (storage *Storage) SavePerson(person interfaces.Person, app *interfaces.PersonProcessingApp) (int64, error) {
 	app.Logger.Info("Data saved", person)
 
 	const op = "storage.postgres.SavePerson"

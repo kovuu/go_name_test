@@ -17,21 +17,26 @@ type SexGeneratorService interface {
 }
 
 type FioConsumerInterface interface {
-	Process(app *Application) error
+	Process(app *PersonProcessingApp) error
 	Close()
 }
 
 type FioFailedProducerInterface interface {
-	Process(personFailedJSON []byte, app *Application)
+	Process(personFailedJSON []byte, app *PersonProcessingApp)
 	Close()
 }
 
 type DataBaseInterface interface {
-	SavePerson(person Person, app *Application) (int64, error)
+	SavePerson(person Person, app *PersonProcessingApp) (int64, error)
 }
 
 type PersonInfoGenerator interface {
 	GetAgeGeneratorResult(name string) int
 	GetGenderGeneratorResult(name string) string
 	GetNationalityGeneratorResult(name string) string
+}
+
+type AddFioProducerInterface interface {
+	Process(app *PersonProducerApp)
+	Close()
 }

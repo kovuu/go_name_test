@@ -5,7 +5,7 @@ import (
 	"log/slog"
 )
 
-type Application struct {
+type PersonProcessingApp struct {
 	DB                DataBaseInterface
 	Cfg               *config.Config
 	Logger            *slog.Logger
@@ -14,14 +14,8 @@ type Application struct {
 	GeneratorService  PersonInfoGenerator
 }
 
-func (app *Application) Process(st []byte) {
-	//switch st {
-	//case "fio_consumer":
-	//	err := app.FioConsumer.Process(app)
-	//	if err != nil {
-	//case "fio_error_producer":
-	app.FioFailedProducer.Process(st, app)
-	//}
+type PersonProducerApp struct {
+	Cfg         *config.Config
+	Logger      *slog.Logger
+	FioProducer AddFioProducerInterface
 }
-
-//}
