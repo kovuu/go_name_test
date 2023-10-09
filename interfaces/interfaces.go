@@ -29,3 +29,9 @@ type FioFailedProducerInterface interface {
 type DataBaseInterface interface {
 	SavePerson(person Person, app *Application) (int64, error)
 }
+
+type PersonInfoGenerator interface {
+	GetAgeGeneratorResult(name string) int
+	GetGenderGeneratorResult(name string) string
+	GetNationalityGeneratorResult(name string) string
+}

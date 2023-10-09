@@ -11,6 +11,7 @@ type Application struct {
 	Logger            *slog.Logger
 	FioConsumer       FioConsumerInterface
 	FioFailedProducer FioFailedProducerInterface
+	GeneratorService  PersonInfoGenerator
 }
 
 func (app *Application) Process(st []byte) {

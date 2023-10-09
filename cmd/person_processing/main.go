@@ -4,6 +4,7 @@ import (
 	"go_test/interfaces"
 	"go_test/internal/config"
 	"go_test/internal/services/fio_consumer"
+	"go_test/internal/services/generator_service"
 	"go_test/internal/services/kafka_fio_errors_producer"
 	"go_test/internal/storage/postgres"
 	"log/slog"
@@ -32,6 +33,7 @@ func main() {
 		app.Logger.Error("db init error", err)
 	}
 
+	app.GeneratorService = generator_service.New(app)
 	err = app.FioConsumer.Process(app)
 	if err != nil {
 		app.Logger.Error("kafka consumer error", err)

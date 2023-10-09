@@ -7,7 +7,6 @@ import (
 	"go_test/interfaces"
 	"go_test/internal/config"
 	"go_test/internal/lib/utils"
-	"go_test/internal/services/generator_service"
 	"log"
 )
 
@@ -42,15 +41,21 @@ func (consumer *FioConsumer) Process(app *interfaces.Application) error {
 			_ = personFailedJSON
 			app.FioFailedProducer.Process(personFailedJSON, app)
 		} else {
-			person.Age = generator_service.GetAgeGeneratorResult(person.Name, app)
-			person.Gender = generator_service.GetGenderGeneratorResult(person.Name, app)
-			person.Nationality = generator_service.GetNationalityGeneratorResult(person.Name, app)
-			savedId, err := app.DB.SavePerson(person, app)
-			if err != nil {
-				fmt.Println("DB ERORR", err)
+			person.Age = app.GeneratorService.GetAgeGeneratorResult(person.Name)
+			person.Gender = app.GeneratorService.GetGenderGeneratorResult(person.Name)
+			person.Nationality = app.GeneratorService.GetNationalityGeneratorResult(person.Name)
+
+			if person.Age != 0 && len(person.Gender) != 0 && len(person.Nationality) != 0 {
+				savedId, err := app.DB.SavePerson(person, app)
+				if err != nil {
+					fmt.Println("DB ERORR", err)
+				} else {
+					app.Logger.Info("person has been saved with id ", savedId)
+				}
 			} else {
-				app.Logger.Info("person has been saved with id ", savedId)
+				app.Logger.Error("Invalid person data")
 			}
+
 		}
 	}
 	return nil
