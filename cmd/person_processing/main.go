@@ -24,7 +24,7 @@ func main() {
 	app.Logger = setupLogger(app.Cfg.Env)
 	app.Logger.Debug("debug messages are enabled")
 
-	app.FioConsumer = fio_consumer.New(app.Cfg)
+	app.FioConsumer = fio_consumer.New(app)
 	app.FioFailedProducer = kafka_fio_errors_producer.New(app.Cfg)
 	var err error
 	app.DB, err = postgres.New(app.Cfg)

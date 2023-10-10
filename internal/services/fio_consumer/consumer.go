@@ -2,10 +2,8 @@ package fio_consumer
 
 import (
 	"context"
-	"fmt"
 	"github.com/segmentio/kafka-go"
 	"go_test/interfaces"
-	"go_test/internal/config"
 	"go_test/internal/lib/utils"
 	"log"
 )
@@ -14,29 +12,49 @@ type FioConsumer struct {
 	Reader *kafka.Reader
 }
 
-func New(cfg *config.Config) *FioConsumer {
-	fmt.Println("config", cfg.KafkaFIOTopic)
+func New(app *interfaces.PersonProcessingApp) *FioConsumer {
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   []string{cfg.KafkaUrl},
-		Topic:     cfg.KafkaFIOTopic,
-		Partition: cfg.KafkaPartition,
+		Brokers:   []string{app.Cfg.KafkaUrl},
+		Topic:     app.Cfg.KafkaFIOTopic,
+		Partition: app.Cfg.KafkaPartition,
 		MaxBytes:  10e6,
 	})
+	offset := getLastTopicOffset(app)
+	err := reader.SetOffset(offset)
+	if err != nil {
+		app.Logger.Error("Cannot set consumer offset")
+	}
+
 	return &FioConsumer{Reader: reader}
+}
+
+func getLastTopicOffset(app *interfaces.PersonProcessingApp) int64 {
+	conn, err := kafka.DialLeader(context.Background(), "tcp", app.Cfg.KafkaUrl, app.Cfg.KafkaFIOTopic, app.Cfg.KafkaPartition)
+	if err != nil {
+		app.Logger.Error("Cannot connect to kafka")
+	}
+	_, last, err := conn.ReadOffsets()
+	if err != nil {
+		app.Logger.Error("Cannot read offsets")
+	}
+
+	return last
 }
 
 func (consumer *FioConsumer) Process(app *interfaces.PersonProcessingApp) error {
 	for {
 		m, err := consumer.Reader.ReadMessage(context.Background())
+
 		if err != nil {
+			app.Logger.Info("err", err)
 			break
 		}
 		app.Logger.Info("New Value", m.Value)
-
 		message := m.Value
+
 		person, err := utils.UnmarshallWrapper(message)
 		if err != nil {
-			log.Printf("Cannot parse a person %s", person)
+			app.Logger.Info("Cannot parse a person %s", person)
 			personFailedJSON := utils.CreatePersonErrorJSON(person)
 			_ = personFailedJSON
 			app.FioFailedProducer.Process(personFailedJSON, app)
@@ -48,7 +66,7 @@ func (consumer *FioConsumer) Process(app *interfaces.PersonProcessingApp) error 
 			if person.Age != 0 && len(person.Gender) != 0 && len(person.Nationality) != 0 {
 				savedId, err := app.DB.SavePerson(person, app)
 				if err != nil {
-					fmt.Println("DB ERORR", err)
+					app.Logger.Info("DB ERORR", err)
 				} else {
 					app.Logger.Info("person has been saved with id ", savedId)
 				}

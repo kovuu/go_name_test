@@ -25,7 +25,7 @@ type FioProducer struct {
 }
 
 func New(cfg *config.Config) *FioProducer {
-	conn, err := kafka.DialLeader(context.Background(), "tcp", cfg.KafkaUrl, cfg.KafkaFIOErrorsTopic, cfg.KafkaPartition)
+	conn, err := kafka.DialLeader(context.Background(), "tcp", cfg.KafkaUrl, cfg.KafkaFIOTopic, cfg.KafkaPartition)
 	if err != nil {
 		log.Fatal("failed to dial leader: ", err)
 	}
