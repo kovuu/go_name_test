@@ -37,7 +37,10 @@ func getLastTopicOffset(app *interfaces.PersonProcessingApp) int64 {
 	if err != nil {
 		app.Logger.Error("Cannot read offsets")
 	}
-
+	err = conn.Close()
+	if err != nil {
+		app.Logger.Error("Cannot close kafka connection", err)
+	}
 	return last
 }
 
@@ -66,7 +69,7 @@ func (consumer *FioConsumer) Process(app *interfaces.PersonProcessingApp) error 
 			if person.Age != 0 && len(person.Gender) != 0 && len(person.Nationality) != 0 {
 				savedId, err := app.DB.SavePerson(person, app)
 				if err != nil {
-					app.Logger.Info("DB ERORR", err)
+					app.Logger.Info("DB ERROR", err)
 				} else {
 					app.Logger.Info("person has been saved with id ", savedId)
 				}
