@@ -1,4 +1,4 @@
-package interfaces
+package domains
 
 type AgeGeneratorResult struct {
 	Count int    `json:"count"`

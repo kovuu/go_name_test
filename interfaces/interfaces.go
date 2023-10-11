@@ -1,5 +1,10 @@
 package interfaces
 
+import (
+	routing "github.com/qiangxue/fasthttp-routing"
+	"go_test/domains"
+)
+
 type HttpService interface {
 	Process()
 }
@@ -17,17 +22,19 @@ type SexGeneratorService interface {
 }
 
 type FioConsumerInterface interface {
-	Process(app *PersonProcessingApp) error
+	Process() error
 	Close()
 }
 
 type FioFailedProducerInterface interface {
-	Process(personFailedJSON []byte, app *PersonProcessingApp)
+	Process(personFailedJSON []byte)
 	Close()
 }
 
 type DataBaseInterface interface {
-	SavePerson(person Person, app *PersonProcessingApp) (int64, error)
+	SavePerson(person domains.Person) (int64, error)
+	GetPersons(params map[string]string) ([]domains.Person, error)
+	GetPersonByID(id int64) (*domains.Person, error)
 }
 
 type PersonInfoGenerator interface {
@@ -37,6 +44,11 @@ type PersonInfoGenerator interface {
 }
 
 type AddFioProducerInterface interface {
-	Process(app *PersonProducerApp)
+	Process()
 	Close()
+}
+
+type PersonHTTPHandlerInterface interface {
+	GetPersons(c *routing.Context) error
+	GetPersonByID(c *routing.Context) error
 }

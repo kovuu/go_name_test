@@ -3,10 +3,9 @@ package generator_service
 import (
 	"encoding/json"
 	"fmt"
-	"go_test/interfaces"
-	"io"
-	"net/http"
-	"os"
+	"github.com/valyala/fasthttp"
+	"go_test/domains"
+	"time"
 )
 
 const (
@@ -16,36 +15,55 @@ const (
 )
 
 type PersonInfoGenerator struct {
-	App *interfaces.PersonProcessingApp
+	App    *domains.PersonProcessingApp
+	Client *fasthttp.Client
 }
 
-func New(app *interfaces.PersonProcessingApp) *PersonInfoGenerator {
-	return &PersonInfoGenerator{App: app}
+func New(app *domains.PersonProcessingApp) *PersonInfoGenerator {
+
+	readTimeout, _ := time.ParseDuration("500ms")
+	writeTimeout, _ := time.ParseDuration("500ms")
+	maxIdleConnDuration, _ := time.ParseDuration("1h")
+	client := &fasthttp.Client{
+		ReadTimeout:                   readTimeout,
+		WriteTimeout:                  writeTimeout,
+		MaxIdleConnDuration:           maxIdleConnDuration,
+		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
+		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
+		DisablePathNormalizing:        true,
+		// increase DNS cache time to an hour instead of default minute
+		Dial: (&fasthttp.TCPDialer{
+			Concurrency:      4096,
+			DNSCacheDuration: time.Hour,
+		}).Dial,
+	}
+
+	return &PersonInfoGenerator{App: app, Client: client}
+
 }
 
 func (serv *PersonInfoGenerator) getHttpGeneratorResultRequest(url string, name string) []byte {
+	req := fasthttp.AcquireRequest()
+
 	parameterizedUrl := fmt.Sprintf(url, name)
-	req, err := http.NewRequest(http.MethodGet, parameterizedUrl, nil)
-	if err != nil {
-		fmt.Printf("client: could not create request: %s\n", err)
-		os.Exit(1)
+	req.SetRequestURI(parameterizedUrl)
+	req.Header.SetMethod(fasthttp.MethodGet)
+	resp := fasthttp.AcquireResponse()
+	err := serv.Client.Do(req, resp)
+	fasthttp.ReleaseRequest(req)
+	if err == nil {
+		serv.App.Logger.Debug("debug response: %s\n", resp.Body())
+	} else {
+		serv.App.Logger.Info("ERR Connection error: %v\n", err)
 	}
+	fasthttp.ReleaseResponse(resp)
 
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		serv.App.Logger.Error("client: error making http request: %s\n", err)
-	}
-
-	resBody, err := io.ReadAll(res.Body)
-	if err != nil {
-		serv.App.Logger.Error("Cannot read getResponse body", err)
-	}
-	return resBody
+	return resp.Body()
 }
 
 func (serv *PersonInfoGenerator) GetAgeGeneratorResult(name string) int {
 	resBody := serv.getHttpGeneratorResultRequest(Age, name)
-	var ageGeneratorResult = interfaces.AgeGeneratorResult{}
+	var ageGeneratorResult = domains.AgeGeneratorResult{}
 	err := json.Unmarshal(resBody, &ageGeneratorResult)
 	if err != nil {
 		serv.App.Logger.Error("failed age generator result parsing", err)
@@ -55,7 +73,7 @@ func (serv *PersonInfoGenerator) GetAgeGeneratorResult(name string) int {
 
 func (serv *PersonInfoGenerator) GetGenderGeneratorResult(name string) string {
 	resBody := serv.getHttpGeneratorResultRequest(Gender, name)
-	var genderGeneratorResult = interfaces.GenderGeneratorResult{}
+	var genderGeneratorResult = domains.GenderGeneratorResult{}
 	err := json.Unmarshal(resBody, &genderGeneratorResult)
 	if err != nil {
 		serv.App.Logger.Error("failed age generator result parsing", err)
@@ -65,13 +83,13 @@ func (serv *PersonInfoGenerator) GetGenderGeneratorResult(name string) string {
 
 func (serv *PersonInfoGenerator) GetNationalityGeneratorResult(name string) string {
 	resBody := serv.getHttpGeneratorResultRequest(Nationality, name)
-	var nationalityGeneratorResult = interfaces.NationalityGeneratorResult{}
+	var nationalityGeneratorResult = domains.NationalityGeneratorResult{}
 	err := json.Unmarshal(resBody, &nationalityGeneratorResult)
 	if err != nil {
 		serv.App.Logger.Error("failed age generator result parsing", err)
 	}
 
-	var nationality = &interfaces.Country{}
+	var nationality = &domains.Country{}
 	for _, v := range nationalityGeneratorResult.Nationality {
 		if nationality == nil {
 			nationality = &v

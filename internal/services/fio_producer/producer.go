@@ -6,8 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/segmentio/kafka-go"
-	"go_test/interfaces"
-	"go_test/internal/config"
+	"go_test/domains"
 	"log"
 	"os"
 	"strings"
@@ -22,17 +21,18 @@ func (err CloseProgramErr) Error() string {
 
 type FioProducer struct {
 	Conn *kafka.Conn
+	App  *domains.PersonProducerApp
 }
 
-func New(cfg *config.Config) *FioProducer {
-	conn, err := kafka.DialLeader(context.Background(), "tcp", cfg.KafkaUrl, cfg.KafkaFIOTopic, cfg.KafkaPartition)
+func New(app *domains.PersonProducerApp) *FioProducer {
+	conn, err := kafka.DialLeader(context.Background(), "tcp", app.Cfg.KafkaUrl, app.Cfg.KafkaFIOTopic, app.Cfg.KafkaPartition)
 	if err != nil {
 		log.Fatal("failed to dial leader: ", err)
 	}
-	return &FioProducer{Conn: conn}
+	return &FioProducer{Conn: conn, App: app}
 }
 
-func (producer *FioProducer) Process(app *interfaces.PersonProducerApp) {
+func (producer *FioProducer) Process() {
 	reading := true
 	for reading {
 		person, err := producer.readUserData()
@@ -61,30 +61,30 @@ func (producer *FioProducer) writeMessage(conn *kafka.Conn, person []byte) {
 	}
 }
 
-func (producer *FioProducer) readUserData() (interfaces.Person, error) {
+func (producer *FioProducer) readUserData() (domains.Person, error) {
 	fmt.Println("Введите информацию о человеке")
 	fmt.Print("Имя: ")
 	name, err := producer.readString()
 	if err != nil {
 		log.Fatal("Не удалось прочитать имя")
-		return interfaces.Person{}, err
+		return domains.Person{}, err
 
 	}
 	fmt.Print("Фамилия: ")
 	lastName, err := producer.readString()
 	if err != nil {
 		log.Fatal("Не удалось прочитать фамилию")
-		return interfaces.Person{}, err
+		return domains.Person{}, err
 
 	}
 	fmt.Print("Отчество: ")
 	patronymic, err := producer.readString()
 	if err != nil {
 		log.Fatal("Не удалось прочитать отчество")
-		return interfaces.Person{}, err
+		return domains.Person{}, err
 	}
 
-	person := interfaces.Person{Name: name, Surname: lastName, Patronymic: patronymic}
+	person := domains.Person{Name: name, Surname: lastName, Patronymic: patronymic}
 	return person, nil
 }
 
