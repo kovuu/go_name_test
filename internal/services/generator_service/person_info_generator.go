@@ -56,7 +56,7 @@ func (serv *PersonInfoGenerator) getHttpGeneratorResultRequest(url string, name 
 	} else {
 		serv.App.Logger.Info("ERR Connection error: %v\n", err)
 	}
-	fasthttp.ReleaseResponse(resp)
+	defer fasthttp.ReleaseResponse(resp)
 
 	return resp.Body()
 }

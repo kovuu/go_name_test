@@ -15,10 +15,6 @@ import (
 	"os"
 )
 
-type Query struct {
-	Filter string `json:"filter"`
-}
-
 const (
 	envLocal = "local"
 	envDev   = "dev"
@@ -47,8 +43,10 @@ func main() {
 		return nil
 	})
 	router.Get("/persons", app.PersonHTTPHandler.GetPersons)
-
 	router.Get("/persons/<id>", app.PersonHTTPHandler.GetPersonByID)
+	router.Post("/persons", app.PersonHTTPHandler.SavePerson)
+	router.Delete("/persons/<id>", app.PersonHTTPHandler.DeletePerson)
+	router.Patch("/persons", app.PersonHTTPHandler.UpdatePerson)
 	go fasthttp.ListenAndServe(":8080", router.HandleRequest)
 
 	err = app.FioConsumer.Process()

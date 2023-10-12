@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/segmentio/kafka-go"
 	"go_test/domains"
+	"go_test/models"
 	"log"
 	"os"
 	"strings"
@@ -61,30 +62,30 @@ func (producer *FioProducer) writeMessage(conn *kafka.Conn, person []byte) {
 	}
 }
 
-func (producer *FioProducer) readUserData() (domains.Person, error) {
+func (producer *FioProducer) readUserData() (models.Person, error) {
 	fmt.Println("Введите информацию о человеке")
 	fmt.Print("Имя: ")
 	name, err := producer.readString()
 	if err != nil {
 		log.Fatal("Не удалось прочитать имя")
-		return domains.Person{}, err
+		return models.Person{}, err
 
 	}
 	fmt.Print("Фамилия: ")
 	lastName, err := producer.readString()
 	if err != nil {
 		log.Fatal("Не удалось прочитать фамилию")
-		return domains.Person{}, err
+		return models.Person{}, err
 
 	}
 	fmt.Print("Отчество: ")
 	patronymic, err := producer.readString()
 	if err != nil {
 		log.Fatal("Не удалось прочитать отчество")
-		return domains.Person{}, err
+		return models.Person{}, err
 	}
 
-	person := domains.Person{Name: name, Surname: lastName, Patronymic: patronymic}
+	person := models.Person{Name: name, Surname: lastName, Patronymic: patronymic}
 	return person, nil
 }
 
