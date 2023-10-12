@@ -2,11 +2,11 @@ package utils
 
 import (
 	"encoding/json"
-	"go_test/types"
+	"go_test/domains"
 )
 
-func CreatePersonErrorJSON(person types.Person) []byte {
-	personFailed := types.PersonFailed{
+func CreatePersonErrorJSON(person domains.Person) []byte {
+	personFailed := domains.PersonFailed{
 		Name:       person.Name,
 		Surname:    person.Surname,
 		Patronymic: person.Patronymic,

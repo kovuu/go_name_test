@@ -2,16 +2,16 @@ package utils
 
 import (
 	"encoding/json"
-	"go_test/types"
+	"go_test/domains"
 	"os"
 )
 
-func UnmarshallWrapper(personJSON []byte) (types.Person, error) {
-	var person types.Person
+func UnmarshallWrapper(personJSON []byte) (domains.Person, error) {
+	var person domains.Person
 
 	err := json.Unmarshal(personJSON, &person)
 	if err != nil {
-		return types.Person{}, err
+		return domains.Person{}, err
 	}
 
 	if len(person.Surname) == 0 {
