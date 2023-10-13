@@ -14,9 +14,9 @@ type RDBClient struct {
 
 func New(app *domains.PersonProcessingApp) *RDBClient {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "my-password",
-		DB:       0,
+		Addr:     app.Cfg.RedisUrl,
+		Password: app.Cfg.RedisPassword,
+		DB:       app.Cfg.RedisDB,
 	})
 	return &RDBClient{
 		App:     app,
