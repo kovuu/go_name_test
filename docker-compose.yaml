@@ -64,15 +64,13 @@ services:
       kafka-topics --bootstrap-server kafka:29092 --list
       "
 
-  listen-kafka:
-    image: confluentinc/cp-kafka:7.3.2
-    depends_on:
-      - kafka1
-    entrypoint: [ '/bin/sh', '-c' ]
-    command: |
-      "
-      # blocks until kafka is reachable
-      kafka-console-consumer --topic FIO --from-beginning --bootstrap-server kafka1:19092
-      "
-      
+  redis:
+    image: 'bitnami/redis:latest'
+    restart: always
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=my-password
+      - REDIS_PORT=6379
+      - REDIS_DATABASES=16
 

@@ -11,6 +11,8 @@ import (
 	"go_test/internal/services/generator_service"
 	"go_test/internal/services/kafka_fio_errors_producer"
 	"go_test/internal/storage/postgres"
+	"go_test/internal/storage/redis"
+
 	"log/slog"
 	"os"
 )
@@ -35,6 +37,8 @@ func main() {
 	if err != nil {
 		app.Logger.Error("db init error", err)
 	}
+
+	app.RedisDB = redis.New(app)
 	app.PersonHTTPHandler = person.New(app)
 	app.GeneratorService = generator_service.New(app)
 	router := routing.New()

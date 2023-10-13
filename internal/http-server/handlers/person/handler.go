@@ -2,7 +2,6 @@ package person
 
 import (
 	"encoding/json"
-	"fmt"
 	routing "github.com/qiangxue/fasthttp-routing"
 	"github.com/valyala/fasthttp"
 	"go_test/domains"
@@ -20,17 +19,27 @@ func New(app *domains.PersonProcessingApp) *Handler {
 
 func (personHandler *Handler) GetPersons(c *routing.Context) error {
 	argsMap := parseQueryParamsToMap(c.QueryArgs())
-	persons, err := personHandler.App.DB.GetPersons(argsMap)
+	cachedData, err := personHandler.App.RedisDB.GetFromCache(c.QueryArgs().String())
 	if err != nil {
-		personHandler.App.Logger.Info("Cannot select persons from database", err)
+		personHandler.App.Logger.Info("get error while loading data from cache", err)
 	}
-	personsJSON, err := json.Marshal(persons)
-	if err != nil {
-		personHandler.App.Logger.Info("cannot parse persons json", err)
-		c.Response.SetStatusCode(500)
-		c.Response.SetBody(personsJSON)
+	if len(cachedData) != 0 {
+		c.Response.SetBody(cachedData)
+		return nil
 	} else {
-		c.Response.SetBody(personsJSON)
+		persons, err := personHandler.App.DB.GetPersons(argsMap)
+		if err != nil {
+			personHandler.App.Logger.Info("Cannot select persons from database", err)
+		}
+		personsJSON, err := json.Marshal(persons)
+		if err != nil {
+			personHandler.App.Logger.Info("cannot parse persons json", err)
+			c.Response.SetStatusCode(500)
+			c.Response.SetBody(personsJSON)
+		} else {
+			personHandler.App.RedisDB.SetToCache(c.QueryArgs().String(), personsJSON)
+			c.Response.SetBody(personsJSON)
+		}
 	}
 
 	return nil
@@ -45,18 +54,30 @@ func (personHandler *Handler) GetPersonByID(c *routing.Context) error {
 			c.Response.SetBodyString(err.Error())
 			return err
 		}
-		person, err := personHandler.App.DB.GetPersonByID(int64(id))
+		cacheResult, err := personHandler.App.RedisDB.GetFromCache(c.Param("id"))
 		if err != nil {
-			personHandler.App.Logger.Info("cannot took person from database")
-			c.Response.SetStatusCode(500)
-			c.Response.SetBodyString(err.Error())
+			personHandler.App.Logger.Info("no data in cache")
 		}
-		response, err := json.Marshal(person)
-		if err != nil {
-			c.Response.SetStatusCode(500)
-			c.Response.SetBodyString("Person object unmarshall failed")
+
+		if len(cacheResult) != 0 {
+			c.Response.SetBody(cacheResult)
+			return nil
+		} else {
+			person, err := personHandler.App.DB.GetPersonByID(int64(id))
+			if err != nil {
+				personHandler.App.Logger.Info("cannot took person from database")
+				c.Response.SetStatusCode(500)
+				c.Response.SetBodyString(err.Error())
+			}
+			response, err := json.Marshal(person)
+			if err != nil {
+				c.Response.SetStatusCode(500)
+				c.Response.SetBodyString("Person object unmarshall failed")
+			}
+			personHandler.App.RedisDB.SetToCache(string(rune(person.Id)), response)
+			c.Response.SetBody(response)
+			return nil
 		}
-		c.Response.SetBody(response)
 	}
 	return nil
 }
@@ -149,7 +170,6 @@ func parseQueryParamsToMap(queryParams *fasthttp.Args) map[string]string {
 	if queryParams.Has("offset") {
 		args["offset"] = string(queryParams.Peek("offset"))
 	}
-	fmt.Println("argsMap", args)
 	return args
 
 }

@@ -57,3 +57,8 @@ type PersonHTTPHandlerInterface interface {
 	UpdatePerson(c *routing.Context) error
 	DeletePerson(c *routing.Context) error
 }
+
+type RedisClientService interface {
+	SetToCache(key string, person []byte)
+	GetFromCache(key string) ([]byte, error)
+}
