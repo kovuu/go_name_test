@@ -67,7 +67,7 @@ func migrateSQL(conn *sql.DB, cfg *config.Config) error {
 }
 
 func (storage *Storage) SavePerson(person models.Person) (int64, error) {
-	storage.App.Logger.Info("Data saved", person)
+	storage.App.Logger.Info("Data saving", person)
 	const op = "storage.postgres.SavePerson"
 	query, _, err := sqlx.In(`INSERT INTO person(name, surname, patronymic, age, gender, nationality) VALUES (?, ?, ?, ?, ?, ?)`,
 		person.Name, person.Surname, person.Patronymic, person.Age, person.Gender, person.Nationality)
@@ -85,7 +85,6 @@ func (storage *Storage) SavePerson(person models.Person) (int64, error) {
 }
 
 func (storage *Storage) GetPersons(params map[string]string) ([]models.Person, error) {
-	const op = "storage.postgres.GetPersons"
 	var queryParams QueryParams
 
 	query, err := parseParamsQueryToSQL(&queryParams, params)
@@ -136,7 +135,7 @@ func (storage *Storage) DeletePersonByID(id int64) error {
 }
 
 func (storage *Storage) UpdatePerson(person models.Person) error {
-	storage.App.Logger.Info("Data saved", person)
+	storage.App.Logger.Info("Data saving", person)
 	const op = "storage.postgres.SavePerson"
 	_, err := storage.DB.NamedExec(`UPDATE person set name=:name, surname=:surname, patronymic=:patronymic, age=:age, nationality=:nationality, gender=:gender  WHERE id=:id`, person)
 	if err != nil {

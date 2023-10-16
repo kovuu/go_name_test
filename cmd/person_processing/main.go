@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
 	routing "github.com/qiangxue/fasthttp-routing"
 	"github.com/valyala/fasthttp"
 	"go_test/domains"
+	"go_test/graph"
 	"go_test/internal/config"
 	"go_test/internal/http-server/handlers/person"
 	"go_test/internal/services/fio_consumer"
@@ -12,8 +15,9 @@ import (
 	"go_test/internal/services/kafka_fio_errors_producer"
 	"go_test/internal/storage/postgres"
 	"go_test/internal/storage/redis"
-
+	"log"
 	"log/slog"
+	"net/http"
 	"os"
 )
 
@@ -52,6 +56,14 @@ func main() {
 	router.Delete("/persons/<id>", app.PersonHTTPHandler.DeletePerson)
 	router.Patch("/persons", app.PersonHTTPHandler.UpdatePerson)
 	go fasthttp.ListenAndServe(":8080", router.HandleRequest)
+
+	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{App: app}}))
+
+	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	http.Handle("/query", srv)
+
+	log.Printf("connect to http://localhost:%s/ for GraphQL playground", "8080")
+	go http.ListenAndServe(":8081", nil)
 
 	err = app.FioConsumer.Process()
 

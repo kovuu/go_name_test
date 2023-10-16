@@ -1,0 +1,48 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type Person {
+  ID: ID!
+  Name: String!
+  Surname: String!
+  Patronymic: String!
+  Age: Int!
+  Nationality: String!
+  Gender: String!
+}
+
+input NewPerson {
+  Name: String!
+  Surname: String!
+  Patronymic: String!
+  Age: Int!
+  Nationality: String!
+  Gender: String!
+}
+
+input PersonInput {
+  ID: ID!
+  Name: String!
+  Surname: String!
+  Patronymic: String!
+  Age: Int!
+  Nationality: String!
+  Gender: String!
+}
+
+type Query{
+  Persons(limit: Int! = 10, offset: Int! = 0, filter: String! = ""): [Person!]!
+  PersonById(id: Int! = 0): Person!
+}
+
+type PersonMutationPayload {
+  ok: Boolean!
+}
+
+
+type Mutation {
+  createPerson(person: NewPerson): PersonMutationPayload!
+  deletePerson(id: Int!): PersonMutationPayload!
+  updatePerson(person: PersonInput!): PersonMutationPayload!
+}
