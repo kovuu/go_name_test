@@ -10,9 +10,18 @@ import (
 	"github.com/jmoiron/sqlx"
 	"go_test/domains"
 	"go_test/internal/config"
+	"go_test/models"
 	"strconv"
 	"strings"
 )
+
+type QueryParams struct {
+	FilterParam string
+	FilterValue string
+	OrderRule   string
+	Limit       uint
+	Offset      uint
+}
 
 type Storage struct {
 	DB  *sqlx.DB
@@ -57,45 +66,56 @@ func migrateSQL(conn *sql.DB, cfg *config.Config) error {
 	return nil
 }
 
-func (storage *Storage) SavePerson(person domains.Person) (int64, error) {
-	storage.App.Logger.Info("Data saved", person)
-
+func (storage *Storage) SavePerson(person models.Person) (int64, error) {
+	storage.App.Logger.Info("Data saving", person)
 	const op = "storage.postgres.SavePerson"
-	query := fmt.Sprintf("INSERT INTO person(name, surname, patronymic, age, gender, nationality) VALUES ('%v', '%v', '%v', '%v', '%v', '%v') RETURNING id",
+	query, _, err := sqlx.In(`INSERT INTO person(name, surname, patronymic, age, gender, nationality) VALUES (?, ?, ?, ?, ?, ?)`,
 		person.Name, person.Surname, person.Patronymic, person.Age, person.Gender, person.Nationality)
-	fmt.Println("query", query)
-	var id int64
-	err := storage.DB.QueryRow(query).Scan(&id)
+	if err != nil {
+		storage.App.Logger.Info("Cannot create query", err)
+		return 0, err
+	}
+	query = storage.DB.Rebind(query)
+	_, err = storage.DB.Query(query, person.Name, person.Surname, person.Patronymic, person.Age, person.Gender, person.Nationality)
 	if err != nil {
 		return 0, fmt.Errorf("%s %w", op, err)
 	}
 
-	return id, nil
+	return 0, nil
 }
 
-func (storage *Storage) GetPersons(params map[string]string) ([]domains.Person, error) {
-	const op = "storage.postgres.GetPersons"
-	query := strings.Builder{}
-	query.WriteString("SELECT * FROM person")
-	err := parseParamsQueryToSQL(&query, params)
-	if err != nil {
-		storage.App.Logger.Info("query params parsing error", err)
-	}
-	fmt.Println("parsedquery", query.String())
-	persons := []domains.Person{}
+func (storage *Storage) GetPersons(params map[string]string) ([]models.Person, error) {
+	var queryParams QueryParams
 
-	err = storage.DB.Select(&persons, query.String())
+	query, err := parseParamsQueryToSQL(&queryParams, params)
+
 	if err != nil {
-		return nil, fmt.Errorf("%s %w", op, err)
+		storage.App.Logger.Info("cannot parse param query to sql", err)
+		return nil, err
+	}
+	rows, err := storage.DB.NamedQuery(query, queryParams)
+	if err != nil {
+		storage.App.Logger.Info("cannot get rows", err)
+		return nil, err
 	}
 
-	fmt.Println("Persons", persons)
+	var persons []models.Person
+	for rows.Next() {
+		var person models.Person
+		err := rows.StructScan(&person)
+		if err != nil {
+			return nil, err
+		}
+		persons = append(persons, person)
+	}
+
+	fmt.Println("persons", persons)
 
 	return persons, nil
 }
 
-func (storage *Storage) GetPersonByID(id int64) (*domains.Person, error) {
-	person := domains.Person{}
+func (storage *Storage) GetPersonByID(id int64) (*models.Person, error) {
+	person := models.Person{}
 
 	err := storage.DB.Get(&person, "Select * FROM person WHERE id=$1", id)
 	if err != nil {
@@ -104,47 +124,74 @@ func (storage *Storage) GetPersonByID(id int64) (*domains.Person, error) {
 	return &person, nil
 }
 
-func parseParamsQueryToSQL(initSb *strings.Builder, param map[string]string) error {
-	fmt.Println("param", len(param["filter"]))
-	if len(param["filter"]) != 0 {
-		filterSb := strings.Builder{}
-		initSb.WriteString(" WHERE")
-		filterString := strings.Split(param["filter"], "=")
+func (storage *Storage) DeletePersonByID(id int64) error {
+	_, err := storage.DB.Exec("DELETE from person WHERE id = $1", id)
+	if err != nil {
+		storage.App.Logger.Info("cannot delete person", err)
+		return err
+	}
+
+	return nil
+}
+
+func (storage *Storage) UpdatePerson(person models.Person) error {
+	storage.App.Logger.Info("Data saving", person)
+	const op = "storage.postgres.SavePerson"
+	_, err := storage.DB.NamedExec(`UPDATE person set name=:name, surname=:surname, patronymic=:patronymic, age=:age, nationality=:nationality, gender=:gender  WHERE id=:id`, person)
+	if err != nil {
+		storage.App.Logger.Info("Cannot update person", err)
+		return err
+	}
+
+	return nil
+}
+
+func parseParamsQueryToSQL(paramsObj *QueryParams, getParams map[string]string) (string, error) {
+	initSb := strings.Builder{}
+	initSb.WriteString("SELECT * FROM person")
+	if len(getParams["filter"]) != 0 {
+		filterString := strings.Split(getParams["filter"], "=")
 		paramName := filterString[0]
 		paramValue := filterString[1]
-		filterSb.WriteString(fmt.Sprintf(" %s = '%s'", paramName, paramValue))
-		initSb.WriteString(filterSb.String())
+		paramsObj.FilterParam = paramName
+		paramsObj.FilterValue = paramValue
+
+		initSb.WriteString(fmt.Sprintf(" WHERE %s=:filtervalue", paramName))
 	}
 
 	dataFlowSB := strings.Builder{}
-	if len(param["orderBy"]) != 0 {
-		initSb.WriteString(" ORDER BY ")
-		filterString := strings.Split(param["orderBy"], "=")
+	if len(getParams["orderBy"]) != 0 {
+		filterString := strings.Split(getParams["orderBy"], "=")
 		paramName := filterString[0]
 		paramValue := filterString[1]
-		dataFlowSB.WriteString(fmt.Sprintf("%s %s", paramName, paramValue))
+		paramsObj.OrderRule = paramName + " " + paramValue
+		initSb.WriteString(" ORDER BY :orderrule")
+
 	} else {
-		dataFlowSB.WriteString(" ORDER BY name ASC ")
+		paramsObj.OrderRule = "name by ASC"
+		initSb.WriteString(" ORDER BY :orderrule ")
 	}
 
-	if len(param["limit"]) != 0 {
-		limitValue, err := strconv.Atoi(param["limit"])
+	if len(getParams["limit"]) != 0 {
+		limitValue, err := strconv.Atoi(getParams["limit"])
 		if err != nil {
-			return err
+			return "", err
 		}
-		dataFlowSB.WriteString(fmt.Sprintf(" LIMIT %v", limitValue))
+		paramsObj.Limit = uint(limitValue)
+		initSb.WriteString(" LIMIT :limit")
 	}
 
-	if len(param["offset"]) != 0 {
-		offsetValue, err := strconv.Atoi(param["offset"])
+	if len(getParams["offset"]) != 0 {
+		offsetValue, err := strconv.Atoi(getParams["offset"])
 		if err != nil {
-			return err
+			return "", err
 		}
-		dataFlowSB.WriteString(fmt.Sprintf(" OFFSET %v", offsetValue))
+		paramsObj.Offset = uint(offsetValue)
+		initSb.WriteString(" OFFSET :offset")
 	}
 
 	initSb.WriteString(dataFlowSB.String())
 
 	fmt.Println("stringRes", initSb.String())
-	return nil
+	return initSb.String(), nil
 }

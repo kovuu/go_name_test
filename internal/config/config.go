@@ -11,6 +11,7 @@ type Config struct {
 	ConfigDatabase
 	MigrationsConfig
 	KafkaConfig
+	RedisConfig
 }
 
 //type HTTPServer struct {
@@ -37,6 +38,12 @@ type ConfigDatabase struct {
 type MigrationsConfig struct {
 	MigrationPath string `env:"MIGRATIONS_PATH"`
 	DriverName    string `env:"DB_DRIVER_NAME"`
+}
+
+type RedisConfig struct {
+	RedisUrl      string `env:"REDIS_URL"`
+	RedisPassword string `env:"REDIS_PASSWORD"`
+	RedisDB       int    `env:"REDIS_DB"`
 }
 
 func MustLoad() *Config {

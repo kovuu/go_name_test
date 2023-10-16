@@ -14,6 +14,7 @@ type PersonProcessingApp struct {
 	FioFailedProducer interfaces.FioFailedProducerInterface
 	GeneratorService  interfaces.PersonInfoGenerator
 	PersonHTTPHandler interfaces.PersonHTTPHandlerInterface
+	RedisDB           interfaces.RedisClientService
 }
 
 type PersonProducerApp struct {
